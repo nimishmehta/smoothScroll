@@ -43,55 +43,44 @@
                     }
                 },
 
-                smoothScrollTo: function(newHash) {
+                smoothScrollTo: function (newHash) {
+                    var startY = $window.pageYOffset,
+                        stopY = elementYPosition(newHash),
+                        distance = stopY - startY,
+                        stepCount = 25,
+                        scrollingSpeed = 100,
+                        step = Math.round(distance / stepCount),
+                        stepTransitionTime = Math.abs(Math.round(distance / scrollingSpeed)),
+                        startLeapY = startY,
+                        stopLeapY = startY + step,
+                        counter = 0;
+
+                    // Setting up the new hash value.
                     if ($location.hash() !== newHash) {
                         $location.hash(newHash);
                     }
 
-                    var startY = $window.pageYOffset,
-                        stopY = elementYPosition(newHash),
-                        distance = stopY > startY ? stopY - startY : startY - stopY,
-                        step = Math.round(distance / 25),
-                        stepTransitionTime = Math.round(distance / 100),
-                        startLeapY,
-                        leapY,
-                        counter = 0;
-
                     // Break total height into multiple steps and scroll each step individiually after
                     // every stepTransitionTime.
-                    if (stopY > startY) {
-                        leapY = startY + step;
-                        startLeapY = startY;
-                        for (var i = startY; i < stopY; i += step) {
-                            stepScrollTo(startLeapY, leapY, counter*stepTransitionTime);
-                            startLeapY = leapY;
-                            leapY += step;
-                            if (leapY > stopY) {
-                              leapY = stopY;
-                            }
-                            counter++;
-                        }
-                    } else {
-                        leapY = startY - step;
-                        startLeapY = stopY;
-                        for (var i = startY; i > stopY; i -= step) {
-                            stepScrollTo(startLeapY, leapY, counter*stepTransitionTime);
-                            startLeapY = leapY;
-                            leapY -= step;
-                            if (leapY < stopY) {
-                              leapY = stopY;
-                            }
-                            counter++;
-                        }
+                    while (Math.abs(stopY - stopLeapY) >= Math.abs(step)) {
+                        stepScrollTo(startLeapY, stopLeapY, counter*stepTransitionTime);
+                        stopLeapY += step;
+                        startLeapY = stopLeapY;
+                        counter++;
                     }
 
-                    function stepScrollTo(startLeapY, leapY, transitionTime) {
+                    // Scroll the left over distance.
+                    // Use case: When total distance is not a multiple of step, left over distance
+                    // will be less than step.
+                    stepScrollTo(startLeapY, stopY, counter*stepTransitionTime);
+
+                    function stepScrollTo (startLeapY, stopLeapY, transitionTime) {
                         $timeout(function () {
-                            $window.scrollTo(startLeapY, leapY);
+                            $window.scrollTo(startLeapY, stopLeapY);
                         }, transitionTime);
                     }
 
-                    function elementYPosition(newHash) {
+                    function elementYPosition (newHash) {
                         var element = document.getElementById(newHash),
                             y = element.offsetTop,
                             node = element;
